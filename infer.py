@@ -5,16 +5,18 @@ from PIL import Image
 import numpy as np
 from dpt.dpt import DptTrtInference
 
-
-def load_image(filepath):
-    img = Image.open(filepath)  # H, W, C
+def load_image(filepath, size=None):
+    img = Image.open(filepath)
+    if size:
+        img = img.resize((size, size), Image.LANCZOS)
+    img = np.array(img)
     img = np.transpose(img, (2, 0, 1))  # C, H, W
     img = img[None]  # B, C, H, W
     return img.astype(np.uint8)
 
 def run(args):
     os.makedirs(args.outdir, exist_ok=True)
-    input_img = load_image(args.img)
+    input_img = load_image(args.img, args.size)
 
     dpt = DptTrtInference(args.engine, 1, input_img.shape[2:], (512, 512))
     depth = dpt(input_img)
@@ -37,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--outdir', type=str, default='./assets', help='Output directory for the depth map')
     parser.add_argument('--engine', type=str, required=True, help='Path to the TensorRT engine')
     parser.add_argument('--grayscale', action='store_true', help='Save the depth map in grayscale')
+    parser.add_argument('--size', type=int, help='Resize image to this size (width and height)')
     args = parser.parse_args()
 
     run(args)

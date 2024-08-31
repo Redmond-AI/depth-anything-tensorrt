@@ -62,6 +62,8 @@ For a single image, use:
 
 ```bash
 python infer.py --img <path to image> --engine <path to trt engine> [--grayscale]
+
+python infer.py --img cynthia.png --engine depth_anything_v2_vitl_4090_798.trt --grayscale --size 798
 ```
 
 For a video, use:
