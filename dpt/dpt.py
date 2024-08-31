@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import tensorrt as trt
 from .transform import DptPreProcess, DptPostProcess
-import cuda  # Assuming cuda is imported for mem_alloc
 
 
 class DptTrtInference:
@@ -19,60 +18,36 @@ class DptTrtInference:
             self._engine = runtime.deserialize_cuda_engine(f.read())
         self._context = self._engine.create_execution_context()
 
-        # Allocate device memory
-        self._d_input = cuda.mem_alloc(batch_size * input_shape[0] * input_shape[1] * 3 * np.dtype(np.float32).itemsize)
-        self._d_output = cuda.mem_alloc(batch_size * output_shape[0] * output_shape[1] * np.dtype(np.float32).itemsize)
+        # Allocate device memory using PyTorch
+        self._d_input = torch.empty(batch_size, 3, *input_shape, dtype=torch.float32, device=self._device)
+        self._d_output = torch.empty(batch_size, *output_shape, dtype=torch.float32, device=self._device)
 
         # Create CUDA stream
-        self._stream = cuda.Stream()
+        self._stream = torch.cuda.Stream()
 
         # Assume target_size is the same as input_shape for now
         target_size = input_shape
         self._pre_process = DptPreProcess(input_shape, target_size, device=self._device)
         self._post_process = DptPostProcess(output_shape, device=self._device)
 
-    def _prepare(self):
-        # Prepare engine
-        logger = trt.Logger(trt.Logger.WARNING)
-        with trt.Runtime(logger) as runtime:
-            with open(self._engine_path, 'rb') as f:
-                self._engine = runtime.deserialize_cuda_engine(f.read())
-        
-        self._context = self._engine.create_execution_context()
-        
-        # Get the shape and data type of the input and output
-        # Batch (first) dimension is dummy here.
-        self._input_shape = self._engine.get_tensor_shape('input')
-        self._output_shape = self._engine.get_tensor_shape('output')
-        self._input_shape[0] = self._batch_size
-        self._output_shape[0] = self._batch_size
-        input_dtype = trt.nptype(self._engine.get_tensor_dtype('input'))
-        output_dtype = trt.nptype(self._engine.get_tensor_dtype('output'))
-        
-        self._context.set_input_shape('input', self._input_shape)
-
-        # Create a CUDA stream for asynchronous processing
-        self._stream = torch.cuda.Stream()
-
-    @torch.no_grad()
     def __call__(self, img):
-        # Ensure img is the correct shape and type
-        if img.shape[1:] != self._input_shape:
-            raise ValueError(f"Input image shape {img.shape[1:]} does not match expected shape {self._input_shape}")
+        if img.shape != (self.batch_size, 3, *self.input_shape):
+            raise ValueError(f"Input shape {img.shape} does not match expected shape {(self.batch_size, 3, *self.input_shape)}")
         
-        img = img.astype(np.float32).ravel()
+        # Convert numpy array to PyTorch tensor and move to GPU
+        img_tensor = torch.from_numpy(img).to(self._device)
         
-        # Copy input data to GPU memory
-        self._d_input.copy_(img.contiguous().view(-1))
-        torch.cuda.current_stream().synchronize()
+        # Copy input data to device
+        self._d_input.copy_(img_tensor)
 
-        # Set input and output bindings
-        self._context.set_tensor_address('input', self._d_input.data_ptr())
-        self._context.set_tensor_address('output', self._d_output.data_ptr())
+        # Run inference
+        bindings = [int(self._d_input.data_ptr()), int(self._d_output.data_ptr())]
+        self._context.execute_async_v2(bindings, self._stream.cuda_stream)
 
-        self._context.execute_async_v3(self._stream.cuda_stream)
+        # Synchronize CUDA stream
         self._stream.synchronize()
 
-        depth = self._post_process(self._d_output)
+        # Copy output back to host
+        output = self._d_output.cpu().numpy()
 
-        return depth
+        return output

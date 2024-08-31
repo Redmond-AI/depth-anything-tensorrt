@@ -4,6 +4,7 @@ import cv2
 from PIL import Image
 import numpy as np
 from dpt.dpt import DptTrtInference
+import torch
 
 def load_image(filepath, size=None):
     img = Image.open(filepath)
