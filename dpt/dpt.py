@@ -25,10 +25,12 @@ class DptTrtInference:
         # Create CUDA stream
         self._stream = torch.cuda.Stream()
 
-        # Assume target_size is the same as input_shape for now
-        target_size = input_shape
-        self._pre_process = DptPreProcess(input_shape, target_size, device=self._device)
-        self._post_process = DptPostProcess(output_shape, device=self._device)
+        # Unpack input_shape and output_shape tuples
+        input_height, input_width = input_shape
+        output_height, output_width = output_shape
+
+        self._pre_process = DptPreProcess((input_height, input_width), (output_height, output_width), device=self._device)
+        self._post_process = DptPostProcess((output_height, output_width), device=self._device)
 
     def __call__(self, img):
         if img.shape != (self.batch_size, 3, *self.input_shape):
