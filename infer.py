@@ -30,18 +30,26 @@ def run(args):
     input_img = input_img.astype(np.float32) / 255.0  # Normalize to [0, 1]
     input_img = np.ascontiguousarray(input_img)
 
+    print(f"Processed input image shape: {input_img.shape}")
+    print(f"Processed input image dtype: {input_img.dtype}")
+
     depth = dpt(input_img)
 
     print(f"Depth output shape: {depth.shape}")
+    print(f"Depth output dtype: {depth.dtype}")
+    print(f"Depth min: {depth.min()}, max: {depth.max()}")
 
     # Save depth map
     img_name = os.path.basename(args.img)
     output_path = f'{args.outdir}/{os.path.splitext(img_name)[0]}_depth.png'
-    depth = depth.squeeze().cpu().numpy().astype(np.uint8)
+    
+    # Consider using a different normalization method if needed
+    depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
+    
     if args.grayscale:
-        cv2.imwrite(output_path, depth)
+        cv2.imwrite(output_path, depth_normalized)
     else:
-        colored_depth = cv2.applyColorMap(depth, cv2.COLORMAP_INFERNO)
+        colored_depth = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_INFERNO)
         cv2.imwrite(output_path, colored_depth)
 
     print(f"Depth saved to {output_path}.")

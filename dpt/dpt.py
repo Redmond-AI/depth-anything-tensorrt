@@ -9,16 +9,27 @@ class DptTrtInference:
     def __init__(self, engine_path, batch_size, input_shape, output_shape, device='cuda'):
         self._device = device
         self._engine_path = engine_path
-        self._batch_size = batch_size
-        self._input_shape = input_shape
-        self._output_shape = output_shape
-        self._prepare()
-        self._pre_process = DptPreProcess(input_shape, device=self._device)
-        self._post_process = DptPostProcess(self._output_shape, depth_size)
+        self.batch_size = batch_size
+        self.input_shape = input_shape
+        self.output_shape = output_shape
 
-        # Allocate memory
+        # Load TensorRT engine
+        self._logger = trt.Logger(trt.Logger.WARNING)
+        with open(engine_path, "rb") as f, trt.Runtime(self._logger) as runtime:
+            self._engine = runtime.deserialize_cuda_engine(f.read())
+        self._context = self._engine.create_execution_context()
+
+        # Allocate device memory
         self._d_input = cuda.mem_alloc(batch_size * input_shape[0] * input_shape[1] * 3 * np.dtype(np.float32).itemsize)
         self._d_output = cuda.mem_alloc(batch_size * output_shape[0] * output_shape[1] * np.dtype(np.float32).itemsize)
+
+        # Create CUDA stream
+        self._stream = cuda.Stream()
+
+        # Assume target_size is the same as input_shape for now
+        target_size = input_shape
+        self._pre_process = DptPreProcess(input_shape, target_size, device=self._device)
+        self._post_process = DptPostProcess(output_shape, device=self._device)
 
     def _prepare(self):
         # Prepare engine
