@@ -1,87 +1,88 @@
-import argparse
-import os
 import cv2
-from PIL import Image
 import numpy as np
+from PIL import Image
+import torch
+import argparse
 from dpt.dpt import DptTrtInference
-import time
 
+def process_frame(frame, dpt, size):
+    # Resize and preprocess the frame
+    frame = cv2.resize(frame, (size, size))
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = frame.transpose(2, 0, 1)
+    frame = np.expand_dims(frame, axis=0)
+    frame = frame.astype(np.float32) / 255.0
 
-def load_frame(frame):
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # H, W, C
-    img = np.transpose(img, (2, 0, 1))  # C, H, W
-    img = img[None]  # B, C, H, W
-    return img.astype(np.uint8)
+    # Run inference
+    depth = dpt(frame)
 
-def run(args):
-    os.makedirs(args.outdir, exist_ok=True)
+    # Normalize depth map
+    depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
     
-    cap = cv2.VideoCapture(args.video)
-    if not cap.isOpened():
-        print(f"Error: Cannot open video {args.video}")
-        return
+    # Convert to PIL Image and then to BGR for OpenCV
+    depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
+    depth_bgr = cv2.cvtColor(np.array(depth_image), cv2.COLOR_GRAY2BGR)
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    return depth_bgr
+
+def run_video(args):
+    # Initialize DptTrtInference
+    dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size), multiple_of=32)
+
+    # Open video capture
+    cap = cv2.VideoCapture(args.video)
+    
+    # Get video properties
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    dpt = DptTrtInference(args.engine, args.batch, (height, width), (height, width))
+    # Create video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
 
-    input_imgs = []
+    frame_count = 0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        input_imgs.append(load_frame(frame))
+        # Process frame
+        depth_frame = process_frame(frame, dpt, args.size)
 
-    input_imgs = np.concatenate(input_imgs, axis=0)
+        # Resize depth frame to match original video size
+        depth_frame = cv2.resize(depth_frame, (width, height))
 
-    frame_count = 0
-    start_time = time.time()
+        # Write frame
+        out.write(depth_frame)
 
-    depths = []
-    for i in range(0, input_imgs.shape[0], args.batch):
-        # Our implementation only support full batch
-        if i + args.batch > input_imgs.shape[0]:
-            break
+        # Display progress
+        frame_count += 1
+        progress = (frame_count / total_frames) * 100
+        print(f"\rProcessing: {progress:.2f}% complete", end="")
 
-        input_img = input_imgs[i:i+args.batch]
-        depths.append(d := dpt(input_img))
-        
-        frame_count += args.batch
-        
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    average_fps = frame_count / elapsed_time
-    print(f"Average FPS: {average_fps:.2f}")
+        # Display frame (optional)
+        if args.display:
+            cv2.imshow('Depth', depth_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video_name = os.path.basename(args.video)
-    output_path = os.path.join(args.outdir, f'{os.path.splitext(video_name)[0]}_depth.mp4')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-    for depth in depths:
-        depth = depth.cpu().numpy().astype(np.uint8)
-        for d in depth:
-            if args.grayscale:
-                depth_colored = cv2.cvtColor(d, cv2.COLOR_GRAY2BGR)
-            else:
-                depth_colored = cv2.applyColorMap(d, cv2.COLORMAP_INFERNO)
-            out.write(depth_colored)
-
+    # Release resources
     cap.release()
     out.release()
+    cv2.destroyAllWindows()
 
-    print(f"Depth video saved to {output_path}.")
+    print("\nVideo processing complete!")
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run depth estimation on a video with a TensorRT engine.')
-    parser.add_argument('--video', type=str, required=True, help='Path to the input video')
-    parser.add_argument('--outdir', type=str, default='./assets', help='Output directory for the depth video')
-    parser.add_argument('--engine', type=str, required=True, help='Path to the TensorRT engine')
-    parser.add_argument('--batch', type=int, default=1, help='Use batch mode for inference')
-    parser.add_argument('--grayscale', action='store_true', help='Save the depth map in grayscale')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Process video and generate depth maps")
+    parser.add_argument('--video', type=str, required=True, help='input video file')
+    parser.add_argument('--engine', type=str, required=True, help='TensorRT engine file')
+    parser.add_argument('--size', type=int, default=798, help='input size for the model')
+    parser.add_argument('--output', type=str, default='output.mp4', help='output video file')
+    parser.add_argument('--display', action='store_true', help='display processed frames')
     args = parser.parse_args()
 
-    run(args)
+    run_video(args)
