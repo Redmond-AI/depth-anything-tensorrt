@@ -44,6 +44,9 @@ class DptTrtInference:
 
         # Set the input tensor address
         self._context.set_tensor_address("input", self._d_input.data_ptr())
+        
+        # Set the output tensor address
+        self._context.set_tensor_address("output", self._d_output.data_ptr())
 
         # Run inference
         self._context.execute_async_v3(stream_handle=self._stream.cuda_stream)
@@ -54,4 +57,11 @@ class DptTrtInference:
         # Copy output back to host
         output = self._d_output.cpu().numpy()
 
+        print(f"Input tensor shape: {self._d_input.shape}")
+        print(f"Input tensor dtype: {self._d_input.dtype}")
+        print(f"Output tensor shape: {self._d_output.shape}")
+        print(f"Output tensor dtype: {self._d_output.dtype}")
+
         return output
+
+
