@@ -15,6 +15,11 @@ def load_image(filepath, size=None):
     img = img[None]  # B, C, H, W
     return img.astype(np.uint8)
 
+def delete_icc_profile(image_path):
+    img = Image.open(image_path)
+    img.info.pop('icc_profile', None)
+    img.save(image_path)
+
 def run(args):
     os.makedirs(args.outdir, exist_ok=True)
     input_img = load_image(args.img, args.size)
