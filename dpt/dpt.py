@@ -5,7 +5,7 @@ from .transform import DptPreProcess, DptPostProcess
 
 
 class DptTrtInference:
-    def __init__(self, engine_path, batch_size, input_shape, output_shape, device='cuda'):
+    def __init__(self, engine_path, batch_size, input_shape, output_shape, device='cuda', multiple_of=32):
         self._device = device
         self._engine_path = engine_path
         self.batch_size = batch_size
@@ -29,7 +29,7 @@ class DptTrtInference:
         input_height, input_width = input_shape
         output_height, output_width = output_shape
 
-        self._pre_process = DptPreProcess((input_height, input_width), output_height, output_width, device=self._device)
+        self._pre_process = DptPreProcess((input_height, input_width), output_height, output_width, device=self._device, multiple_of=multiple_of)
         self._post_process = DptPostProcess((output_height, output_width), device=self._device)
 
     def __call__(self, img):

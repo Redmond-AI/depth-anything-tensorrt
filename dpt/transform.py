@@ -6,8 +6,9 @@ import torchvision.transforms as T
 
 
 class DptPreProcess(object):
-    def __init__(self, input_size, target_height, target_width, device='cuda'):
+    def __init__(self, input_size, target_height, target_width, device='cuda', multiple_of=32):
         self._device = device
+        self._multiple_of = multiple_of
         self._height, self._width = self.get_input_size(input_size[0], input_size[1], target_height, target_width)
         # ... rest of the initialization ...
 

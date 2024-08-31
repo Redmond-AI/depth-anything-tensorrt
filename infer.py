@@ -22,7 +22,7 @@ def run(args):
     print(f"Input image shape: {input_img.shape}")
 
     # Use args.size for both input and output sizes
-    dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size))
+    dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size), multiple_of=32)
     
     print(f"DPT input shape: {dpt.input_shape}")
     print(f"DPT output shape: {dpt.output_shape}")
