@@ -33,6 +33,7 @@ def run(args):
 
     print(f"Processed input image shape: {input_img.shape}")
     print(f"Processed input image dtype: {input_img.dtype}")
+    print(f"Processed input image min: {input_img.min()}, max: {input_img.max()}")
 
     depth = dpt(input_img)
 

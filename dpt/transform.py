@@ -6,17 +6,10 @@ import torchvision.transforms as T
 
 
 class DptPreProcess(object):
-    def __init__(self, input_size, target_size, img_channel=3, ensure_multiple_of=14, dtype=torch.float32, device='cuda'):
-        self._multiple_of = ensure_multiple_of
-        self._img_channel = img_channel
+    def __init__(self, input_size, target_height, target_width, device='cuda'):
         self._device = device
-        self._height, self._width = self.get_input_size(input_size[0], input_size[1], target_size, target_size)
-
-        self._transforms = nn.Sequential(
-            T.Resize((self._height, self._width)),
-            T.ConvertImageDtype(dtype),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        )
+        self._height, self._width = self.get_input_size(input_size[0], input_size[1], target_height, target_width)
+        # ... rest of the initialization ...
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
         y = (np.round(x / self._multiple_of) * self._multiple_of).astype(int)
