@@ -70,6 +70,8 @@ For a video, use:
 
 ```bash
 python infer_video.py --video <path to video> --engine <path to trt engine> [--batch <batch size>] [--grayscale]
+
+python infer_video.py --video test.mp4 --engine depth_anything_v2_vitl_4090_798.trt --output test_depth.mp4  --size 798
 ```
 
 You can also use a webcam for real-time inference:
