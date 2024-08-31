@@ -18,8 +18,18 @@ def run(args):
     os.makedirs(args.outdir, exist_ok=True)
     input_img = load_image(args.img, args.size)
 
+    print(f"Input image shape: {input_img.shape}")
+
     # Use args.size for both input and output sizes
     dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size))
+    
+    print(f"DPT input shape: {dpt._d_input.shape}")
+    print(f"DPT output shape: {dpt._d_output.shape}")
+
+    # Ensure input_img is the correct shape and type
+    input_img = input_img.astype(np.float32) / 255.0  # Normalize to [0, 1]
+    input_img = np.ascontiguousarray(input_img)
+
     depth = dpt(input_img)
 
     # Save depth map

@@ -1,18 +1,23 @@
-
 import torch
 import numpy as np
 import tensorrt as trt
 from .transform import DptPreProcess, DptPostProcess
+import cuda  # Assuming cuda is imported for mem_alloc
 
 
 class DptTrtInference:
-    def __init__(self, engine_path, batch_size, img_size, depth_size, dpt_size=518, device='cuda'):
+    def __init__(self, engine_path, batch_size, input_shape, output_shape):
         self._engine_path = engine_path
         self._batch_size = batch_size
-        self._device = device
+        self._input_shape = input_shape
+        self._output_shape = output_shape
         self._prepare()
-        self._pre_process = DptPreProcess(img_size, dpt_size, device=self._device)
+        self._pre_process = DptPreProcess(input_shape, device=self._device)
         self._post_process = DptPostProcess(self._output_shape, depth_size)
+
+        # Allocate memory
+        self._d_input = cuda.mem_alloc(batch_size * input_shape[0] * input_shape[1] * 3 * np.dtype(np.float32).itemsize)
+        self._d_output = cuda.mem_alloc(batch_size * output_shape[0] * output_shape[1] * np.dtype(np.float32).itemsize)
 
     def _prepare(self):
         # Prepare engine
@@ -34,17 +39,17 @@ class DptTrtInference:
         
         self._context.set_input_shape('input', self._input_shape)
 
-        # Allocate memory
-        self._d_input = torch.empty(tuple(self._input_shape), dtype=torch.from_numpy(np.array([], dtype=input_dtype)).dtype, device='cuda').view(-1)
-        self._d_output = torch.empty(tuple(self._output_shape), dtype=torch.from_numpy(np.array([], dtype=output_dtype)).dtype, device='cuda').view(-1)
-
         # Create a CUDA stream for asynchronous processing
         self._stream = torch.cuda.Stream()
 
     @torch.no_grad()
     def __call__(self, img):
-        img = self._pre_process(img)
-
+        # Ensure img is the correct shape and type
+        if img.shape[1:] != self._input_shape:
+            raise ValueError(f"Input image shape {img.shape[1:]} does not match expected shape {self._input_shape}")
+        
+        img = img.astype(np.float32).ravel()
+        
         # Copy input data to GPU memory
         self._d_input.copy_(img.contiguous().view(-1))
         torch.cuda.current_stream().synchronize()
