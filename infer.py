@@ -40,8 +40,8 @@ def run(args):
         print(f"Depth min: {depth.min()}, max: {depth.max()}")
     except Exception as e:
         print(f"Error during inference: {str(e)}")
-        print(f"TensorRT engine input shape: {dpt._engine.get_binding_shape(0)}")
-        print(f"TensorRT engine output shape: {dpt._engine.get_binding_shape(1)}")
+        print(f"TensorRT engine input shape: {dpt._engine.get_tensor_shape('input')}")
+        print(f"TensorRT engine output shape: {dpt._engine.get_tensor_shape('output')}")
         raise
 
     # Save depth map
