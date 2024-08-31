@@ -40,29 +40,14 @@ def run(args):
 
     try:
         depth = dpt(input_img)
-        print(f"Depth output shape: {depth.shape}")
-        print(f"Depth output dtype: {depth.dtype}")
-        print(f"Depth min: {depth.min()}, max: {depth.max()}")
+        depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
+        depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
+        depth_image.save("./assets/cynthia_depth.png")
     except Exception as e:
         print(f"Error during inference: {str(e)}")
         print(f"TensorRT engine input shape: {dpt._engine.get_tensor_shape('input')}")
         print(f"TensorRT engine output shape: {dpt._engine.get_tensor_shape('output')}")
         raise
-
-    # Save depth map
-    img_name = os.path.basename(args.img)
-    output_path = f'{args.outdir}/{os.path.splitext(img_name)[0]}_depth.png'
-    
-    # Consider using a different normalization method if needed
-    depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
-    
-    if args.grayscale:
-        cv2.imwrite(output_path, depth_normalized)
-    else:
-        colored_depth = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_INFERNO)
-        cv2.imwrite(output_path, colored_depth)
-
-    print(f"Depth saved to {output_path}.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run depth estimation with a TensorRT engine.')
