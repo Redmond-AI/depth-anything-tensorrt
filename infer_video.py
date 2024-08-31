@@ -4,6 +4,7 @@ from PIL import Image
 import torch
 import argparse
 from dpt.dpt import DptTrtInference
+import time
 
 def process_frame(frame, dpt, size):
     original_size = frame.shape[:2][::-1]  # (width, height)
@@ -50,14 +51,19 @@ def run_video(args):
 
     frame_count = 0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    total_time = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Process frame
+        # Process frame and measure time
+        start_time = time.time()
         depth_frame = process_frame(frame, dpt, args.size)
+        end_time = time.time()
+        frame_time = end_time - start_time
+        total_time += frame_time
 
         # Write frame (no need to resize as it's already at original resolution)
         out.write(depth_frame)
@@ -65,7 +71,7 @@ def run_video(args):
         # Display progress
         frame_count += 1
         progress = (frame_count / total_frames) * 100
-        print(f"\rProcessing: {progress:.2f}% complete", end="")
+        print(f"\rProcessing: {progress:.2f}% complete | Frame time: {frame_time:.4f}s", end="")
 
         # Display frame (optional)
         if args.display:
@@ -78,7 +84,13 @@ def run_video(args):
     out.release()
     cv2.destroyAllWindows()
 
-    print("\nVideo processing complete!")
+    # Calculate and print average time per frame
+    avg_time_per_frame = total_time / frame_count
+    print(f"\nVideo processing complete!")
+    print(f"Total frames processed: {frame_count}")
+    print(f"Total processing time: {total_time:.2f} seconds")
+    print(f"Average time per frame: {avg_time_per_frame:.4f} seconds")
+    print(f"Average FPS: {1/avg_time_per_frame:.2f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process video and generate depth maps")
