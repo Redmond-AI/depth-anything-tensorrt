@@ -44,7 +44,9 @@ class DptTrtInference:
 
         # Run inference
         bindings = [int(self._d_input.data_ptr()), int(self._d_output.data_ptr())]
-        self._context.execute_async_v2(bindings, self._stream.cuda_stream)
+        
+        # Use execute_async_v3 instead of execute_async_v2
+        self._context.execute_async_v3(bindings=bindings, stream_handle=self._stream.cuda_stream)
 
         # Synchronize CUDA stream
         self._stream.synchronize()

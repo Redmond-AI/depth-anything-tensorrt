@@ -21,13 +21,11 @@ def run(args):
 
     print(f"Input image shape: {input_img.shape}")
 
-    # Use args.size for both input and output sizes
     dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size), multiple_of=32)
     
     print(f"DPT input shape: {dpt.input_shape}")
     print(f"DPT output shape: {dpt.output_shape}")
 
-    # Ensure input_img is the correct shape and type
     input_img = input_img.astype(np.float32) / 255.0  # Normalize to [0, 1]
     input_img = np.ascontiguousarray(input_img)
 
@@ -35,11 +33,16 @@ def run(args):
     print(f"Processed input image dtype: {input_img.dtype}")
     print(f"Processed input image min: {input_img.min()}, max: {input_img.max()}")
 
-    depth = dpt(input_img)
-
-    print(f"Depth output shape: {depth.shape}")
-    print(f"Depth output dtype: {depth.dtype}")
-    print(f"Depth min: {depth.min()}, max: {depth.max()}")
+    try:
+        depth = dpt(input_img)
+        print(f"Depth output shape: {depth.shape}")
+        print(f"Depth output dtype: {depth.dtype}")
+        print(f"Depth min: {depth.min()}, max: {depth.max()}")
+    except Exception as e:
+        print(f"Error during inference: {str(e)}")
+        print(f"TensorRT engine input shape: {dpt._engine.get_binding_shape(0)}")
+        print(f"TensorRT engine output shape: {dpt._engine.get_binding_shape(1)}")
+        raise
 
     # Save depth map
     img_name = os.path.basename(args.img)
