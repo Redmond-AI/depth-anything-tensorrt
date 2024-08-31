@@ -42,6 +42,9 @@ class DptTrtInference:
         # Copy input data to device
         self._d_input.copy_(img_tensor)
 
+        # Set the input tensor address
+        self._context.set_tensor_address("input", self._d_input.data_ptr())
+
         # Run inference
         self._context.execute_async_v3(stream_handle=self._stream.cuda_stream)
 
