@@ -29,12 +29,21 @@ Replace the `third_party/depth_anything_v2/depth_anything_v2/dpt.py` file with t
 
 ```bash
 python tools/export_onnx.py --checkpoint <path to checkpoint> --onnx <path to save onnx model> --input_size <dpt input size> --encoder <dpt encoder> [--dynamic_batch]
+
+I add the current dir to the python path
+PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_vitg.pth --onnx depth_anything_v2_vitg_4090_798.onnx --input_size 798 --encoder vitg
 ```
 
 ### Convert ONNX to TensorRT
 
 ```bash
 python onnx2trt.py --onnx <path to onnx model> --engine <path to save trt engine> [--fp16]
+
+I had to run this first or else tensorrt wouldnt be imported
+pip install --force-reinstall tensorrt==10.2.0.post1 tensorrt-cu12==10.2.0.post1
+
+what I used:
+PYTHONPATH=. python tools/onnx2trt.py --onnx depth_anything_v2_vitg_4090_798.onnx --engine depth_anything_v2_vitg_4090_798.trt --fp16
 ```
 
 You can also enable dynamic batch size for TensorRT engine (If you want to use dynamic batch size here, also remember to enable it in the previous ONNX model conversion step):
