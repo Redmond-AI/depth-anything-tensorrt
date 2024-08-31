@@ -41,9 +41,9 @@ def run_video(args):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    print(f"Input video resolution: {width}x{height}")
-    print(f"Processing frames at size: {args.size}x{args.size}")
-    print(f"Output video will maintain original resolution: {width}x{height}")
+    # print(f"Input video resolution: {width}x{height}")
+    # print(f"Processing frames at size: {args.size}x{args.size}")
+    # print(f"Output video will maintain original resolution: {width}x{height}")
 
     # Create video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
