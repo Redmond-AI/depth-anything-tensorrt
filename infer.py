@@ -18,7 +18,8 @@ def run(args):
     os.makedirs(args.outdir, exist_ok=True)
     input_img = load_image(args.img, args.size)
 
-    dpt = DptTrtInference(args.engine, 1, input_img.shape[2:], (512, 512))
+    # Use args.size for both input and output sizes
+    dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size))
     depth = dpt(input_img)
 
     # Save depth map
