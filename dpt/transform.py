@@ -46,10 +46,8 @@ class DptPreProcess(object):
     
 
 class DptPostProcess(object):
-    def __init__(self, depth_shape, target_size, dtype=torch.float32):
-        self._depth_shape = depth_shape
-        self._target_size = target_size
-        self._dtype = dtype
+    def __init__(self, output_size):
+        self._output_size = output_size
 
     def _normalize(self, x):
         """Per channel normalize

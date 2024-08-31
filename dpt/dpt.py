@@ -30,7 +30,7 @@ class DptTrtInference:
         output_height, output_width = output_shape
 
         self._pre_process = DptPreProcess((input_height, input_width), output_height, output_width, device=self._device, multiple_of=multiple_of)
-        self._post_process = DptPostProcess((output_height, output_width), device=self._device)
+        self._post_process = DptPostProcess((output_height, output_width))  # Removed device argument
 
     def __call__(self, img):
         if img.shape != (self.batch_size, 3, *self.input_shape):
