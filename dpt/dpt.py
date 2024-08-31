@@ -57,10 +57,10 @@ class DptTrtInference:
         # Copy output back to host
         output = self._d_output.cpu().numpy()
 
-        print(f"Input tensor shape: {self._d_input.shape}")
-        print(f"Input tensor dtype: {self._d_input.dtype}")
-        print(f"Output tensor shape: {self._d_output.shape}")
-        print(f"Output tensor dtype: {self._d_output.dtype}")
+        # print(f"Input tensor shape: {self._d_input.shape}")
+        # print(f"Input tensor dtype: {self._d_input.dtype}")
+        # print(f"Output tensor shape: {self._d_output.shape}")
+        # print(f"Output tensor dtype: {self._d_output.dtype}")
 
         return output
 
