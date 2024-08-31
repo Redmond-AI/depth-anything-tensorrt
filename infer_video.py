@@ -6,21 +6,24 @@ import argparse
 from dpt.dpt import DptTrtInference
 
 def process_frame(frame, dpt, size):
+    original_size = frame.shape[:2][::-1]  # (width, height)
+    
     # Resize and preprocess the frame
-    frame = cv2.resize(frame, (size, size))
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame = frame.transpose(2, 0, 1)
-    frame = np.expand_dims(frame, axis=0)
-    frame = frame.astype(np.float32) / 255.0
+    frame_resized = cv2.resize(frame, (size, size))
+    frame_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
+    frame_input = frame_rgb.transpose(2, 0, 1)
+    frame_input = np.expand_dims(frame_input, axis=0)
+    frame_input = frame_input.astype(np.float32) / 255.0
 
     # Run inference
-    depth = dpt(frame)
+    depth = dpt(frame_input)
 
     # Normalize depth map
     depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
     
-    # Convert to PIL Image and then to BGR for OpenCV
+    # Convert to PIL Image, resize to original size, and then to BGR for OpenCV
     depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
+    depth_image = depth_image.resize(original_size, Image.LANCZOS)
     depth_bgr = cv2.cvtColor(np.array(depth_image), cv2.COLOR_GRAY2BGR)
 
     return depth_bgr
@@ -37,6 +40,10 @@ def run_video(args):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
+    print(f"Input video resolution: {width}x{height}")
+    print(f"Processing frames at size: {args.size}x{args.size}")
+    print(f"Output video will maintain original resolution: {width}x{height}")
+
     # Create video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
@@ -52,10 +59,7 @@ def run_video(args):
         # Process frame
         depth_frame = process_frame(frame, dpt, args.size)
 
-        # Resize depth frame to match original video size
-        depth_frame = cv2.resize(depth_frame, (width, height))
-
-        # Write frame
+        # Write frame (no need to resize as it's already at original resolution)
         out.write(depth_frame)
 
         # Display progress
