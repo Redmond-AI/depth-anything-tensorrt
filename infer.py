@@ -23,14 +23,16 @@ def run(args):
     # Use args.size for both input and output sizes
     dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size))
     
-    print(f"DPT input shape: {dpt._d_input.shape}")
-    print(f"DPT output shape: {dpt._d_output.shape}")
+    print(f"DPT input shape: {dpt.input_shape}")
+    print(f"DPT output shape: {dpt.output_shape}")
 
     # Ensure input_img is the correct shape and type
     input_img = input_img.astype(np.float32) / 255.0  # Normalize to [0, 1]
     input_img = np.ascontiguousarray(input_img)
 
     depth = dpt(input_img)
+
+    print(f"Depth output shape: {depth.shape}")
 
     # Save depth map
     img_name = os.path.basename(args.img)

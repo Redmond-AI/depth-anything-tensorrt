@@ -6,7 +6,8 @@ import cuda  # Assuming cuda is imported for mem_alloc
 
 
 class DptTrtInference:
-    def __init__(self, engine_path, batch_size, input_shape, output_shape):
+    def __init__(self, engine_path, batch_size, input_shape, output_shape, device='cuda'):
+        self._device = device
         self._engine_path = engine_path
         self._batch_size = batch_size
         self._input_shape = input_shape
