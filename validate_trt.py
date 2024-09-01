@@ -64,8 +64,12 @@ def run_trt(engine_path, input_data):
     np.copyto(h_input, input_data.ravel())
     cuda.memcpy_htod_async(d_input, h_input, stream)
 
+    # Set input and output bindings
+    context.set_tensor_address(input_tensor_name, int(d_input))
+    context.set_tensor_address(output_tensor_name, int(d_output))
+
     # Run inference
-    context.execute_async_v2(bindings=[int(d_input), int(d_output)], stream_handle=stream.handle)
+    context.execute_async_v3(stream_handle=stream.handle)
 
     # Copy output back to CPU
     cuda.memcpy_dtoh_async(h_output, d_output, stream)
