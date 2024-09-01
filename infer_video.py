@@ -17,13 +17,12 @@ def process_frame(frame, dpt, size):
     frame_input = frame_input.astype(np.float32) / 255.0
 
     # Run inference
-    # time_start = time.time()
     depth = dpt(frame_input)
-    # print(f"Inference time: {time.time() - time_start}")
+    
+    return depth, original_size
 
-    # Normalize depth map
-    #print(f"Depth: {depth.min()}, {depth.max()}")
-    depth_normalized = ((depth - depth.min()) / (500 - depth.min()) * 255).astype(np.uint8)
+def normalize_and_convert_depth(depth, original_size, global_min, global_max):
+    depth_normalized = ((depth - global_min) / (global_max - global_min) * 255).astype(np.uint8)
     
     # Convert to PIL Image, resize to original size, and then to BGR for OpenCV
     depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
@@ -43,17 +42,37 @@ def run_video(args):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    # print(f"Input video resolution: {width}x{height}")
-    # print(f"Processing frames at size: {args.size}x{args.size}")
-    # print(f"Output video will maintain original resolution: {width}x{height}")
+    # First pass: determine global min and max depth values
+    global_min = float('inf')
+    global_max = float('-inf')
+    frame_count = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        depth, _ = process_frame(frame, dpt, args.size)
+        global_min = min(global_min, depth.min())
+        global_max = max(global_max, depth.max())
+
+        frame_count += 1
+        progress = (frame_count / total_frames) * 100
+        print(f"\rFirst pass: {progress:.2f}% complete", end="")
+
+    print(f"\nGlobal depth range: {global_min:.2f} to {global_max:.2f}")
+
+    # Reset video capture for second pass
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     # Create video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
 
+    # Second pass: process and save normalized depth frames
     frame_count = 0
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     total_time = 0
 
     while cap.isOpened():
@@ -63,18 +82,19 @@ def run_video(args):
 
         # Process frame and measure time
         start_time = time.time()
-        depth_frame = process_frame(frame, dpt, args.size)
+        depth, original_size = process_frame(frame, dpt, args.size)
+        depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
         total_time += frame_time
 
-        # Write frame (no need to resize as it's already at original resolution)
+        # Write frame
         out.write(depth_frame)
 
         # Display progress
         frame_count += 1
         progress = (frame_count / total_frames) * 100
-        print(f"\rProcessing: {progress:.2f}% complete | Frame time: {frame_time:.4f}s", end="")
+        print(f"\rSecond pass: {progress:.2f}% complete | Frame time: {frame_time:.4f}s", end="")
 
         # Display frame (optional)
         if args.display:
