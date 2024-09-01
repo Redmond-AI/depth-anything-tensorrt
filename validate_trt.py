@@ -52,7 +52,9 @@ def run_trt(engine_path, input_data):
     input_shape = engine.get_tensor_shape(input_tensor_name)
     output_shape = engine.get_tensor_shape(output_tensor_name)
 
-    # Allocate memory for input and output
+    print(f"TensorRT input shape: {input_shape}")
+    print(f"TensorRT output shape: {output_shape}")
+
     h_input = cuda.pagelocked_empty(trt.volume(input_shape), dtype=np.float32)
     h_output = cuda.pagelocked_empty(trt.volume(output_shape), dtype=np.float32)
     d_input = cuda.mem_alloc(h_input.nbytes)
@@ -77,7 +79,26 @@ def run_trt(engine_path, input_data):
 
     # Reshape the output
     trt_output = h_output.reshape(output_shape)
+
+    print(f"TensorRT input min: {input_data.min()}, max: {input_data.max()}")
+    print(f"TensorRT output min: {trt_output.min()}, max: {trt_output.max()}")
+
     return trt_output
+
+def compare_outputs(onnx_output, trt_output):
+    print("Comparing ONNX and TensorRT outputs:")
+    print(f"ONNX shape: {onnx_output.shape}, TRT shape: {trt_output.shape}")
+    print(f"ONNX min: {onnx_output.min()}, max: {onnx_output.max()}")
+    print(f"TRT min: {trt_output.min()}, max: {trt_output.max()}")
+    
+    abs_diff = np.abs(onnx_output - trt_output)
+    print(f"Absolute difference - min: {abs_diff.min()}, max: {abs_diff.max()}, mean: {abs_diff.mean()}")
+    
+    relative_diff = abs_diff / (np.abs(onnx_output) + 1e-7)
+    print(f"Relative difference - min: {relative_diff.min()}, max: {relative_diff.max()}, mean: {relative_diff.mean()}")
+    
+    mse = np.mean((onnx_output - trt_output)**2)
+    print(f"Mean Squared Error: {mse}")
 
 def run(args):
     os.makedirs(args.outdir, exist_ok=True)
@@ -105,11 +126,13 @@ def run(args):
     print(f"TensorRT output dtype: {trt_output.dtype}")
     print(f"TensorRT output min: {trt_output.min()}, max: {trt_output.max()}")
 
-    # Check for NaN values in TensorRT output
-    if np.isnan(trt_output).any():
-        print("Warning: TensorRT output contains NaN values")
+    # Check for NaN and Inf values in TensorRT output
+    if np.isnan(trt_output).any() or np.isinf(trt_output).any():
+        print("Warning: TensorRT output contains NaN or Inf values")
+        print(f"Number of NaN values: {np.isnan(trt_output).sum()}")
+        print(f"Number of Inf values: {np.isinf(trt_output).sum()}")
     else:
-        print("TensorRT output does not contain NaN values")
+        print("TensorRT output does not contain NaN or Inf values")
 
     # Save TensorRT depth map
     trt_output_path = os.path.join(args.outdir, f"{os.path.splitext(os.path.basename(args.img))[0]}_trt_depth.png")
@@ -119,6 +142,8 @@ def run(args):
     # Compare ONNX and TensorRT outputs
     mse = np.mean((onnx_output - trt_output)**2)
     print("Mean Squared Error between ONNX and TensorRT outputs:", mse)
+
+    compare_outputs(onnx_output, trt_output)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Validate TensorRT engine with ONNX model')
