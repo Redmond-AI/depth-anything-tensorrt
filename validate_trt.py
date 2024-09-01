@@ -8,6 +8,7 @@ import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit
 import pycuda.autoprimaryctx
+import time
 
 def load_image(filepath, size=None):
     img = Image.open(filepath)
@@ -35,12 +36,15 @@ def load_engine(engine_path):
         return runtime.deserialize_cuda_engine(f.read())
 
 def run_onnx(onnx_path, input_data):
+    time_start = time.time()
     ort_session = ort.InferenceSession(onnx_path)
     input_name = ort_session.get_inputs()[0].name
     ort_outputs = ort_session.run(None, {input_name: input_data})
+    print(f"ONNX time: {time.time() - time_start}")
     return ort_outputs[0]
 
 def run_trt(engine_path, input_data):
+    time_start = time.time()
     engine = load_engine(engine_path)
     context = engine.create_execution_context()
 
@@ -82,6 +86,7 @@ def run_trt(engine_path, input_data):
 
     print(f"TensorRT input min: {input_data.min()}, max: {input_data.max()}")
     print(f"TensorRT output min: {trt_output.min()}, max: {trt_output.max()}")
+    print(f"TensorRT time: {time.time() - time_start}")
 
     return trt_output
 
