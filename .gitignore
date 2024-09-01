@@ -164,3 +164,4 @@ cython_debug/
 assets/
 models/
 checkpoints/
+.DS_Store

@@ -13,6 +13,11 @@ git submodule init && git submodule update
 Install dependencies:
 ```bash
 pip install tensorrt==10.2.0.post1
+
+^^^ this doesn't fully work. After this command I have to run this command in order for it to work.
+pip install --force-reinstall tensorrt==10.2.0.post1 tensorrt-cu12==10.2.0.post1
+
+
 ```
 
 ## Model Preparation
@@ -31,6 +36,7 @@ Replace the `third_party/depth_anything_v2/depth_anything_v2/dpt.py` file with t
 python tools/export_onnx.py --checkpoint <path to checkpoint> --onnx <path to save onnx model> --input_size <dpt input size> --encoder <dpt encoder> [--dynamic_batch]
 
 I add the current dir to the python path
+
 PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_vitg.pth --onnx depth_anything_v2_vitg_4090_798.onnx --input_size 798 --encoder vitg
 ```
 
