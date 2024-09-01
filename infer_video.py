@@ -22,8 +22,8 @@ def process_frame(frame, dpt, size):
     # print(f"Inference time: {time.time() - time_start}")
 
     # Normalize depth map
-    # print(f"Depth: {depth.min()}, {depth.max()}")
-    depth_normalized = ((depth - depth.min()) / (1000 - depth.min()) * 255).astype(np.uint8)
+    print(f"Depth: {depth.min()}, {depth.max()}")
+    depth_normalized = ((depth - depth.min()) / (10000 - depth.min()) * 255).astype(np.uint8)
     
     # Convert to PIL Image, resize to original size, and then to BGR for OpenCV
     depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
