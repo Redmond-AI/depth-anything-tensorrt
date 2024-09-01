@@ -12,12 +12,10 @@ git submodule init && git submodule update
 
 Install dependencies:
 ```bash
-pip install tensorrt==10.2.0.post1
-
-^^^ this doesn't fully work. After this command I have to run this command in order for it to work.
-pip install --force-reinstall tensorrt==10.2.0.post1 tensorrt-cu12==10.2.0.post1
+pip install tensorrt-cu12==10.2.0.post1
 
 
+pip install pycuda ?
 ```
 
 ## Model Preparation
@@ -46,10 +44,12 @@ PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything
 python onnx2trt.py --onnx <path to onnx model> --engine <path to save trt engine> [--fp16]
 
 I had to run this first or else tensorrt wouldnt be imported
-pip install --force-reinstall tensorrt==10.2.0.post1 tensorrt-cu12==10.2.0.post1
 
 what I used:
 PYTHONPATH=. python tools/onnx2trt.py --onnx depth_anything_v2_vitg_4090_798.onnx --engine depth_anything_v2_vitg_4090_798.trt --fp16
+
+new script:
+python trt_build_engine.py --onnx depth_anything_v2_vitg_4090_798.onnx --engine depth_anything_v2_vitg_4090_798_fp16.trt --tf32 --workspace 20
 ```
 
 You can also enable dynamic batch size for TensorRT engine (If you want to use dynamic batch size here, also remember to enable it in the previous ONNX model conversion step):
