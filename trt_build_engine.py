@@ -5,7 +5,10 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=False, workspace_si
     logger = trt.Logger(trt.Logger.VERBOSE)
     builder = trt.Builder(logger)
     config = builder.create_builder_config()
-    config.max_workspace_size = workspace_size * (1 << 30)  # Convert to bytes
+    
+    # Use the new method to set workspace size
+    config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace_size * (1 << 30))  # Convert GB to bytes
+    
     if fp16_mode:
         config.set_flag(trt.BuilderFlag.FP16)
 
