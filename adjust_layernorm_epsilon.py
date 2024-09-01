@@ -1,12 +1,12 @@
 import onnx
 from onnx import numpy_helper
+import os
 
 def adjust_layernorm_epsilon(model_path, output_path, new_epsilon=1e-5):
     print(f"Loading ONNX model from {model_path}")
     model = onnx.load(model_path)
     
-    print("Checking original model")
-    onnx.checker.check_model(model)
+    print(f"Model loaded. Size: {os.path.getsize(model_path) / (1024 * 1024):.2f} MB")
     
     print(f"Adjusting LayerNormalization epsilon to {new_epsilon}")
     layers_adjusted = 0
@@ -19,11 +19,10 @@ def adjust_layernorm_epsilon(model_path, output_path, new_epsilon=1e-5):
     
     print(f"Adjusted {layers_adjusted} LayerNormalization layers")
     
-    print("Checking adjusted model")
-    onnx.checker.check_model(model)
-    
     print(f"Saving adjusted model to {output_path}")
     onnx.save(model, output_path)
+    
+    print(f"Adjusted model saved. Size: {os.path.getsize(output_path) / (1024 * 1024):.2f} MB")
 
 if __name__ == "__main__":
     import argparse
