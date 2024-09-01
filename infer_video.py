@@ -17,7 +17,9 @@ def process_frame(frame, dpt, size):
     frame_input = frame_input.astype(np.float32) / 255.0
 
     # Run inference
+    time_start = time.time()
     depth = dpt(frame_input)
+    print(f"Inference time: {time.time() - time_start}")
 
     # Normalize depth map
     depth_normalized = ((depth - depth.min()) / (10000 - depth.min()) * 255).astype(np.uint8)
