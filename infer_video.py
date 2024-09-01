@@ -20,7 +20,7 @@ def process_frame(frame, dpt, size):
     depth = dpt(frame_input)
 
     # Normalize depth map
-    depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min()) * 255).astype(np.uint8)
+    depth_normalized = ((depth - depth.min()) / (10000 - depth.min()) * 255).astype(np.uint8)
     
     # Convert to PIL Image, resize to original size, and then to BGR for OpenCV
     depth_image = Image.fromarray(depth_normalized.squeeze(), mode='L')
