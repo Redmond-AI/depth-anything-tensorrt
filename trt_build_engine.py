@@ -24,14 +24,14 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=False, workspace_si
             return None
 
     print("ONNX file parsed successfully. Building TensorRT engine...")
-    engine = builder.build_engine(network, config)
-    if engine is None:
+    serialized_engine = builder.build_serialized_network(network, config)
+    if serialized_engine is None:
         print('ERROR: Failed to build TensorRT engine.')
         return None
 
     print(f"Saving TensorRT engine to {engine_file_path}")
     with open(engine_file_path, 'wb') as f:
-        f.write(engine.serialize())
+        f.write(serialized_engine)
 
     print(f'TensorRT engine built and saved to {engine_file_path}')
     return engine_file_path
