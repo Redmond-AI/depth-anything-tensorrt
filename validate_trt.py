@@ -7,6 +7,7 @@ import onnxruntime as ort
 import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit
+import pycuda.autoprimaryctx
 
 def load_image(filepath, size=None):
     img = Image.open(filepath)
@@ -43,9 +44,17 @@ def run_trt(engine_path, input_data):
     engine = load_engine(engine_path)
     context = engine.create_execution_context()
 
+    # Get input and output tensor names
+    input_tensor_name = engine.get_tensor_name(0)
+    output_tensor_name = engine.get_tensor_name(1)
+
+    # Get input and output shapes
+    input_shape = engine.get_tensor_shape(input_tensor_name)
+    output_shape = engine.get_tensor_shape(output_tensor_name)
+
     # Allocate memory for input and output
-    h_input = cuda.pagelocked_empty(trt.volume(engine.get_tensor_shape(0)), dtype=np.float32)
-    h_output = cuda.pagelocked_empty(trt.volume(engine.get_tensor_shape(1)), dtype=np.float32)
+    h_input = cuda.pagelocked_empty(trt.volume(input_shape), dtype=np.float32)
+    h_output = cuda.pagelocked_empty(trt.volume(output_shape), dtype=np.float32)
     d_input = cuda.mem_alloc(h_input.nbytes)
     d_output = cuda.mem_alloc(h_output.nbytes)
 
@@ -63,7 +72,7 @@ def run_trt(engine_path, input_data):
     stream.synchronize()
 
     # Reshape the output
-    trt_output = h_output.reshape(engine.get_tensor_shape(1))
+    trt_output = h_output.reshape(output_shape)
     return trt_output
 
 def run(args):
