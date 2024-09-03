@@ -212,7 +212,7 @@ def run_video(args):
         elif args.method == 'split':
             depth, original_size = process_frame_split(frame, dpt, args.use_gpu)
         else:  # single method
-            depth, original_size = process_frame_single(frame, dpt)
+            depth, original_size = process_frame_single(frame, dpt, args.size)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
