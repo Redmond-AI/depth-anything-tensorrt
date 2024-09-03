@@ -98,7 +98,7 @@ def run_video(args):
         # Process frame and measure time
         start_time = time.time()
         depth, original_size = process_frame(frame, dpt, sizes)
-        print("min and max",global_min, global_max)
+        # print("min and max",global_min, global_max)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
