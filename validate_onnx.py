@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description='Validate ONNX model with image inp
 parser.add_argument('--img', type=str, required=True, help='Path to the input image')
 parser.add_argument('--onnx', type=str, default='depth_anything_v2_vitg_4090_798.onnx', help='Path to the ONNX model')
 parser.add_argument('--output', type=str, default='onnx_depth_output.png', help='Path to save the output depth map')
+parser.add_argument('--size', type=int, default=798, help='Size to resize the input image (default: 798)')
 args = parser.parse_args()
 
 # Load the ONNX model
@@ -32,7 +33,7 @@ print(f"Input name: {input_name}")
 print(f"Input shape: {input_shape}")
 
 # Load and preprocess the image
-input_data = load_image(args.img)
+input_data = load_image(args.img, size=args.size)
 print(f"Processed input image shape: {input_data.shape}")
 print(f"Processed input image min: {input_data.min()}, max: {input_data.max()}")
 

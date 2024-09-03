@@ -15,7 +15,9 @@ Install dependencies:
 pip install tensorrt-cu12==10.2.0.post1
 
 
-pip install pycuda #needed for converting to trt
+#needed for converting to trt
+pip install pycuda 
+pip install onnxruntime
 ```
 
 ## Model Preparation
