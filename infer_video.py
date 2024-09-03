@@ -249,7 +249,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process video and generate depth maps")
     parser.add_argument('--video', type=str, required=True, help='input video file')
     parser.add_argument('--engine', type=str, required=True, help='TensorRT engine file')
-    parser.add_argument('--size', type=int, default=args.size, help='input size for the model')
+    parser.add_argument('--size', type=int, default=798, help='input size for the model')
     parser.add_argument('--output', type=str, default='output.mp4', help='output video file')
     parser.add_argument('--display', action='store_true', help='display processed frames')
     parser.add_argument('--method', type=str, choices=['multi_res', 'split', 'single'], default='multi_res',
