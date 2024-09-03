@@ -55,7 +55,7 @@ def process_frame_multi_res(frame, dpt, sizes):
     
     return combined_depth, original_size
 
-def process_frame_split(frame, dpt, sizes):
+def process_frame_split(frame, dpt):
     original_size = frame.shape[:2][::-1]  # (width, height)
     depths = []
 
@@ -63,30 +63,21 @@ def process_frame_split(frame, dpt, sizes):
     split_images = split_image_into_four(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
 
     for split_image in split_images:
-        split_depths = []
-        for size in sizes:
-            # Resize the split image to the current size
-            image_resized = split_image.resize((size, size), Image.LANCZOS)
-            
-            # Resize again to 798x798 for DPT input
-            image_dpt = image_resized.resize((798, 798), Image.LANCZOS)
-            
-            # Preprocess the image
-            image_np = np.array(image_dpt)
-            image_input = image_np.transpose(2, 0, 1)
-            image_input = np.expand_dims(image_input, axis=0)
-            image_input = image_input.astype(np.float32) / 255.0
-
-            # Run inference
-            depth = dpt(image_input)
-            
-            # Resize depth back to original split image size
-            depth_resized = cv2.resize(depth.squeeze(), (original_size[0]//2, original_size[1]//2))
-            split_depths.append(depth_resized)
+        # Resize to 798x798 for DPT input
+        image_dpt = split_image.resize((798, 798), Image.LANCZOS)
         
-        # Combine depths for this split image using max operation
-        combined_split_depth = np.max(split_depths, axis=0)
-        depths.append(combined_split_depth)
+        # Preprocess the image
+        image_np = np.array(image_dpt)
+        image_input = image_np.transpose(2, 0, 1)
+        image_input = np.expand_dims(image_input, axis=0)
+        image_input = image_input.astype(np.float32) / 255.0
+
+        # Run inference
+        depth = dpt(image_input)
+        
+        # Resize depth back to original split image size
+        depth_resized = cv2.resize(depth.squeeze(), (original_size[0]//2, original_size[1]//2))
+        depths.append(depth_resized)
 
     # Reconstruct the full depth map
     full_depth = np.zeros(original_size[::-1], dtype=np.float32)
@@ -108,7 +99,7 @@ def normalize_and_convert_depth(depth, original_size, global_min, global_max):
     return depth_bgr
 
 def run_video(args):
-    sizes = [392, 518, 630, 798]
+    sizes = [266, 392, 518, 798]
     # Initialize a single DptTrtInference for 798x798 input
     dpt = DptTrtInference(args.engine, 1, (798, 798), (798, 798), multiple_of=32)
 
@@ -134,7 +125,7 @@ def run_video(args):
         if args.method == 'multi_res':
             depth, _ = process_frame_multi_res(frame, dpt, sizes)
         else:  # split method
-            depth, _ = process_frame_split(frame, dpt, sizes)
+            depth, _ = process_frame_split(frame, dpt)
         
         global_min = min(global_min, depth.min())
         global_max = max(global_max, depth.max())
@@ -166,7 +157,7 @@ def run_video(args):
         if args.method == 'multi_res':
             depth, original_size = process_frame_multi_res(frame, dpt, sizes)
         else:  # split method
-            depth, original_size = process_frame_split(frame, dpt, sizes)
+            depth, original_size = process_frame_split(frame, dpt)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
