@@ -38,7 +38,7 @@ def normalize_and_convert_depth(depth, original_size, global_min, global_max):
     return depth_bgr
 
 def run_video(args):
-    sizes = [266, 392, 518, 616, 798]
+    sizes = [224, 266, 392, 518, 616, 798]
     # Initialize DptTrtInference for each size
     dpts = [DptTrtInference(args.engine, 1, (size, size), (size, size), multiple_of=32) for size in sizes]
 
