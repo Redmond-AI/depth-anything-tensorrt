@@ -60,8 +60,8 @@ def process_frame_multi_res(frame, dpt, sizes):
         # Resize the frame to the current size
         frame_resized = cv2.resize(frame, (size, size))
         
-        # Resize again to 798x798 for DPT input
-        frame_dpt = cv2.resize(frame_resized, (798, 798))
+        # Resize again to args.sizexargs.size for DPT input
+        frame_dpt = cv2.resize(frame_resized, (args.size, args.size))
         
         # Preprocess the frame
         frame_rgb = cv2.cvtColor(frame_dpt, cv2.COLOR_BGR2RGB)
@@ -93,8 +93,8 @@ def process_frame_split(frame, dpt, use_gpu=False):
             # Convert back to CPU for further processing
             split_image = split_image.cpu().numpy()
         
-        # Resize to 798x798 for DPT input
-        image_dpt = cv2.resize(split_image, (798, 798))
+        # Resize to args.sizexargs.size for DPT input
+        image_dpt = cv2.resize(split_image, (args.size, args.size))
         
         # Preprocess the image
         image_input = image_dpt.transpose(2, 0, 1)
@@ -117,11 +117,11 @@ def process_frame_split(frame, dpt, use_gpu=False):
     
     return full_depth, original_size
 
-def process_frame_single(frame, dpt):
+def process_frame_single(frame, dpt, size):
     original_size = frame.shape[:2][::-1]  # (width, height)
     
-    # Resize to 798x798 for DPT input
-    frame_dpt = cv2.resize(frame, (798, 798))
+    # Resize to args.sizexargs.size for DPT input
+    frame_dpt = cv2.resize(frame, (size, size))
     
     # Preprocess the frame
     frame_rgb = cv2.cvtColor(frame_dpt, cv2.COLOR_BGR2RGB)
@@ -150,7 +150,7 @@ def normalize_and_convert_depth(depth, original_size, global_min, global_max):
 def run_video(args):
     sizes = [266, 392, 518, 798]
     # Initialize a single DptTrtInference for 798x798 input
-    dpt = DptTrtInference(args.engine, 1, (798, 798), (798, 798), multiple_of=32)
+    dpt = DptTrtInference(args.engine, 1, (args.size, args.size), (args.size, args.size), multiple_of=32)
 
     # Open video capture
     cap = cv2.VideoCapture(args.video)
@@ -177,7 +177,7 @@ def run_video(args):
             elif args.method == 'split':
                 depth, _ = process_frame_split(frame, dpt, args.use_gpu)
             else:  # single method
-                depth, _ = process_frame_single(frame, dpt)
+                depth, _ = process_frame_single(frame, dpt, args.size)
             
             global_min = min(global_min, depth.min())
             global_max = max(global_max, depth.max())
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process video and generate depth maps")
     parser.add_argument('--video', type=str, required=True, help='input video file')
     parser.add_argument('--engine', type=str, required=True, help='TensorRT engine file')
-    parser.add_argument('--size', type=int, default=798, help='input size for the model')
+    parser.add_argument('--size', type=int, default=args.size, help='input size for the model')
     parser.add_argument('--output', type=str, default='output.mp4', help='output video file')
     parser.add_argument('--display', action='store_true', help='display processed frames')
     parser.add_argument('--method', type=str, choices=['multi_res', 'split', 'single'], default='multi_res',
