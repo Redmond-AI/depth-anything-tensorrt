@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Starting size
-size=602
+size=798
 
 # Number of iterations
-iterations=45
+iterations=40
 
 for i in $(seq 1 $iterations); do
     echo "Running iteration $i with size $size"

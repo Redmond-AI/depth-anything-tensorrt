@@ -5,6 +5,8 @@ import torch
 import argparse
 from dpt.dpt import DptTrtInference
 import time
+import os
+from datetime import datetime
 
 def split_image_into_four_cpu(image):
     # Convert image to numpy array if it's not already
@@ -239,11 +241,24 @@ def run_video(args):
 
     # Calculate and print average time per frame
     avg_time_per_frame = total_time / frame_count
+    fps = 1 / avg_time_per_frame
     print(f"\nVideo processing complete!")
     print(f"Total frames processed: {frame_count}")
     print(f"Total processing time: {total_time:.2f} seconds")
     print(f"Average time per frame: {avg_time_per_frame:.4f} seconds")
-    print(f"Average FPS: {1/avg_time_per_frame:.2f}")
+    print(f"Average FPS: {fps:.2f}")
+
+    # Log results to file
+    log_file = 'infer_video_log.txt'
+    with open(log_file, 'a') as f:
+        f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Engine: {args.engine}\n")
+        f.write(f"Method: {args.method}\n")
+        f.write(f"Input size: {args.size}\n")
+        f.write(f"Average time per frame: {avg_time_per_frame:.4f} seconds\n")
+        f.write(f"Average FPS: {fps:.2f}\n")
+        f.write(f"Video: {os.path.basename(args.video)}\n")
+        f.write("-" * 50 + "\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process video and generate depth maps")
