@@ -6,7 +6,7 @@ import argparse
 from dpt.dpt import DptTrtInference
 import time
 
-def split_image_into_four(image):
+def split_image_into_four_cpu(image):
     # Convert image to numpy array if it's not already
     if isinstance(image, Image.Image):
         image = np.array(image)
@@ -14,17 +14,43 @@ def split_image_into_four(image):
     # Get dimensions
     height, width, channels = image.shape
     
-    # Create four empty images
-    images = [np.zeros((height//2, width//2, channels), dtype=image.dtype) for _ in range(4)]
+    # Create four images using advanced indexing
+    images = [
+        image[0::2, 0::2],  # Top-left pixels
+        image[0::2, 1::2],  # Top-right pixels
+        image[1::2, 0::2],  # Bottom-left pixels
+        image[1::2, 1::2]   # Bottom-right pixels
+    ]
     
-    # Fill the four images
-    images[0] = image[0::2, 0::2]  # Top-left pixels
-    images[1] = image[0::2, 1::2]  # Top-right pixels
-    images[2] = image[1::2, 0::2]  # Bottom-left pixels
-    images[3] = image[1::2, 1::2]  # Bottom-right pixels
+    return images
+
+def split_image_into_four_gpu(image):
+    # Convert image to torch tensor if it's not already
+    if isinstance(image, np.ndarray):
+        image = torch.from_numpy(image).cuda()
+    elif isinstance(image, Image.Image):
+        image = torch.from_numpy(np.array(image)).cuda()
+    elif isinstance(image, torch.Tensor) and not image.is_cuda:
+        image = image.cuda()
     
-    # Convert back to PIL Images
-    return [Image.fromarray(img) for img in images]
+    # Get dimensions
+    height, width, channels = image.shape
+    
+    # Create four images using advanced indexing
+    images = [
+        image[0::2, 0::2],  # Top-left pixels
+        image[0::2, 1::2],  # Top-right pixels
+        image[1::2, 0::2],  # Bottom-left pixels
+        image[1::2, 1::2]   # Bottom-right pixels
+    ]
+    
+    return images
+
+def split_image_into_four(image, use_gpu=False):
+    if use_gpu and torch.cuda.is_available():
+        return split_image_into_four_gpu(image)
+    else:
+        return split_image_into_four_cpu(image)
 
 def process_frame_multi_res(frame, dpt, sizes):
     original_size = frame.shape[:2][::-1]  # (width, height)
@@ -55,20 +81,23 @@ def process_frame_multi_res(frame, dpt, sizes):
     
     return combined_depth, original_size
 
-def process_frame_split(frame, dpt):
+def process_frame_split(frame, dpt, use_gpu=False):
     original_size = frame.shape[:2][::-1]  # (width, height)
     depths = []
 
     # Split the frame into four images
-    split_images = split_image_into_four(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+    split_images = split_image_into_four(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_gpu)
 
     for split_image in split_images:
+        if use_gpu:
+            # Convert back to CPU for further processing
+            split_image = split_image.cpu().numpy()
+        
         # Resize to 798x798 for DPT input
-        image_dpt = split_image.resize((798, 798), Image.LANCZOS)
+        image_dpt = cv2.resize(split_image, (798, 798))
         
         # Preprocess the image
-        image_np = np.array(image_dpt)
-        image_input = image_np.transpose(2, 0, 1)
+        image_input = image_dpt.transpose(2, 0, 1)
         image_input = np.expand_dims(image_input, axis=0)
         image_input = image_input.astype(np.float32) / 255.0
 
@@ -126,7 +155,7 @@ def run_video(args):
             if args.method == 'multi_res':
                 depth, _ = process_frame_multi_res(frame, dpt, sizes)
             else:  # split method
-                depth, _ = process_frame_split(frame, dpt)
+                depth, _ = process_frame_split(frame, dpt, args.use_gpu)
             
             global_min = min(global_min, depth.min())
             global_max = max(global_max, depth.max())
@@ -159,7 +188,7 @@ def run_video(args):
         if args.method == 'multi_res':
             depth, original_size = process_frame_multi_res(frame, dpt, sizes)
         else:  # split method
-            depth, original_size = process_frame_split(frame, dpt)
+            depth, original_size = process_frame_split(frame, dpt, args.use_gpu)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
@@ -202,6 +231,7 @@ if __name__ == "__main__":
     parser.add_argument('--method', type=str, choices=['multi_res', 'split'], default='multi_res',
                         help='processing method: multi_res (multiple resolutions) or split (split image)')
     parser.add_argument('--sample_rate', type=int, default=10, help='process every Nth frame in the first pass')
+    parser.add_argument('--use_gpu', action='store_true', help='use GPU for image splitting (if available)')
     args = parser.parse_args()
 
     run_video(args)
