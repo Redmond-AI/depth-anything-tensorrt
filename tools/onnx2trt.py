@@ -16,7 +16,7 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=False, workspace_si
     config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, GiB(workspace_size))
     
     # Enable TF32 inference
-    config.set_flag(trt.BuilderFlag.TF32)
+    # config.set_flag(trt.BuilderFlag.TF32)
     
     if fp16_mode:
         config.set_flag(trt.BuilderFlag.FP16)
