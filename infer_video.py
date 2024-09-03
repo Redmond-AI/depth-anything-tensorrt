@@ -6,11 +6,11 @@ import argparse
 from dpt.dpt import DptTrtInference
 import time
 
-def process_frame(frame, dpt, sizes):
+def process_frame(frame, dpts, sizes):
     original_size = frame.shape[:2][::-1]  # (width, height)
     depths = []
 
-    for size in sizes:
+    for dpt, size in zip(dpts, sizes):
         # Resize and preprocess the frame
         frame_resized = cv2.resize(frame, (size, size))
         frame_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
