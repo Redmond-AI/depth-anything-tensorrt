@@ -13,7 +13,7 @@ for i in $(seq 1 $iterations); do
     PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_vitl.pth --onnx depth_anything_v2_vitl_4090_${size}.onnx --input_size $size --encoder vitl
 
     # Convert ONNX to TRT
-    PYTHONPATH=. python tools/onnx2trt.py --onnx depth_anything_v2_vitl_4090_${size}.onnx --engine depth_anything_v2_vitl_4090_${size}.trt --fp16
+    PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_vitl_4090_${size}.onnx --engine depth_anything_v2_vitl_4090_${size}.trt --fp16
 
     # Run inference
     git pull
