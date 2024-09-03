@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Starting size
-size=812
+size=784
 
 # Number of iterations
 iterations=10
@@ -22,7 +22,8 @@ for i in $(seq 1 $iterations); do
     # Delete the .trt file
     rm depth_anything_v2_vitl_4090_${size}.trt
     echo "Deleted depth_anything_v2_vitl_4090_${size}.trt"
-
+    rm depth_anything_v2_vitl_4090_${size}.onnx
+    echo "Deleted depth_anything_v2_vitl_4090_${size}.onnx"
     # Increment size by 14
     size=$((size + 14))
 done
