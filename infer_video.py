@@ -6,7 +6,27 @@ import argparse
 from dpt.dpt import DptTrtInference
 import time
 
-def process_frame(frame, dpt, sizes):
+def split_image_into_four(image):
+    # Convert image to numpy array if it's not already
+    if isinstance(image, Image.Image):
+        image = np.array(image)
+    
+    # Get dimensions
+    height, width, channels = image.shape
+    
+    # Create four empty images
+    images = [np.zeros((height//2, width//2, channels), dtype=image.dtype) for _ in range(4)]
+    
+    # Fill the four images
+    images[0] = image[0::2, 0::2]  # Top-left pixels
+    images[1] = image[0::2, 1::2]  # Top-right pixels
+    images[2] = image[1::2, 0::2]  # Bottom-left pixels
+    images[3] = image[1::2, 1::2]  # Bottom-right pixels
+    
+    # Convert back to PIL Images
+    return [Image.fromarray(img) for img in images]
+
+def process_frame_multi_res(frame, dpt, sizes):
     original_size = frame.shape[:2][::-1]  # (width, height)
     depths = []
 
@@ -34,6 +54,48 @@ def process_frame(frame, dpt, sizes):
     combined_depth = np.max(depths, axis=0)
     
     return combined_depth, original_size
+
+def process_frame_split(frame, dpt, sizes):
+    original_size = frame.shape[:2][::-1]  # (width, height)
+    depths = []
+
+    # Split the frame into four images
+    split_images = split_image_into_four(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+
+    for split_image in split_images:
+        split_depths = []
+        for size in sizes:
+            # Resize the split image to the current size
+            image_resized = split_image.resize((size, size), Image.LANCZOS)
+            
+            # Resize again to 798x798 for DPT input
+            image_dpt = image_resized.resize((798, 798), Image.LANCZOS)
+            
+            # Preprocess the image
+            image_np = np.array(image_dpt)
+            image_input = image_np.transpose(2, 0, 1)
+            image_input = np.expand_dims(image_input, axis=0)
+            image_input = image_input.astype(np.float32) / 255.0
+
+            # Run inference
+            depth = dpt(image_input)
+            
+            # Resize depth back to original split image size
+            depth_resized = cv2.resize(depth.squeeze(), (original_size[0]//2, original_size[1]//2))
+            split_depths.append(depth_resized)
+        
+        # Combine depths for this split image using max operation
+        combined_split_depth = np.max(split_depths, axis=0)
+        depths.append(combined_split_depth)
+
+    # Reconstruct the full depth map
+    full_depth = np.zeros(original_size[::-1], dtype=np.float32)
+    full_depth[0::2, 0::2] = depths[0]
+    full_depth[0::2, 1::2] = depths[1]
+    full_depth[1::2, 0::2] = depths[2]
+    full_depth[1::2, 1::2] = depths[3]
+    
+    return full_depth, original_size
 
 def normalize_and_convert_depth(depth, original_size, global_min, global_max):
     depth_normalized = ((depth - global_min) / (global_max - global_min) * 255).astype(np.uint8)
@@ -69,7 +131,11 @@ def run_video(args):
         if not ret:
             break
 
-        depth, _ = process_frame(frame, dpt, sizes)
+        if args.method == 'multi_res':
+            depth, _ = process_frame_multi_res(frame, dpt, sizes)
+        else:  # split method
+            depth, _ = process_frame_split(frame, dpt, sizes)
+        
         global_min = min(global_min, depth.min())
         global_max = max(global_max, depth.max())
 
@@ -97,8 +163,10 @@ def run_video(args):
 
         # Process frame and measure time
         start_time = time.time()
-        depth, original_size = process_frame(frame, dpt, sizes)
-        # print("min and max",global_min, global_max)
+        if args.method == 'multi_res':
+            depth, original_size = process_frame_multi_res(frame, dpt, sizes)
+        else:  # split method
+            depth, original_size = process_frame_split(frame, dpt, sizes)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
@@ -138,6 +206,8 @@ if __name__ == "__main__":
     parser.add_argument('--size', type=int, default=798, help='input size for the model')
     parser.add_argument('--output', type=str, default='output.mp4', help='output video file')
     parser.add_argument('--display', action='store_true', help='display processed frames')
+    parser.add_argument('--method', type=str, choices=['multi_res', 'split'], default='multi_res',
+                        help='processing method: multi_res (multiple resolutions) or split (split image)')
     args = parser.parse_args()
 
     run_video(args)
