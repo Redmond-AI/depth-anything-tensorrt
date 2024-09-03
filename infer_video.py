@@ -117,6 +117,26 @@ def process_frame_split(frame, dpt, use_gpu=False):
     
     return full_depth, original_size
 
+def process_frame_single(frame, dpt):
+    original_size = frame.shape[:2][::-1]  # (width, height)
+    
+    # Resize to 798x798 for DPT input
+    frame_dpt = cv2.resize(frame, (798, 798))
+    
+    # Preprocess the frame
+    frame_rgb = cv2.cvtColor(frame_dpt, cv2.COLOR_BGR2RGB)
+    frame_input = frame_rgb.transpose(2, 0, 1)
+    frame_input = np.expand_dims(frame_input, axis=0)
+    frame_input = frame_input.astype(np.float32) / 255.0
+
+    # Run inference
+    depth = dpt(frame_input)
+    
+    # Resize depth back to original size
+    depth_resized = cv2.resize(depth.squeeze(), original_size)
+    
+    return depth_resized, original_size
+
 def normalize_and_convert_depth(depth, original_size, global_min, global_max):
     depth_normalized = ((depth - global_min) / (global_max - global_min) * 255).astype(np.uint8)
     
@@ -154,8 +174,10 @@ def run_video(args):
         if frame_count % args.sample_rate == 0:
             if args.method == 'multi_res':
                 depth, _ = process_frame_multi_res(frame, dpt, sizes)
-            else:  # split method
+            elif args.method == 'split':
                 depth, _ = process_frame_split(frame, dpt, args.use_gpu)
+            else:  # single method
+                depth, _ = process_frame_single(frame, dpt)
             
             global_min = min(global_min, depth.min())
             global_max = max(global_max, depth.max())
@@ -187,8 +209,10 @@ def run_video(args):
         start_time = time.time()
         if args.method == 'multi_res':
             depth, original_size = process_frame_multi_res(frame, dpt, sizes)
-        else:  # split method
+        elif args.method == 'split':
             depth, original_size = process_frame_split(frame, dpt, args.use_gpu)
+        else:  # single method
+            depth, original_size = process_frame_single(frame, dpt)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
@@ -228,8 +252,8 @@ if __name__ == "__main__":
     parser.add_argument('--size', type=int, default=798, help='input size for the model')
     parser.add_argument('--output', type=str, default='output.mp4', help='output video file')
     parser.add_argument('--display', action='store_true', help='display processed frames')
-    parser.add_argument('--method', type=str, choices=['multi_res', 'split'], default='multi_res',
-                        help='processing method: multi_res (multiple resolutions) or split (split image)')
+    parser.add_argument('--method', type=str, choices=['multi_res', 'split', 'single'], default='multi_res',
+                        help='processing method: multi_res (multiple resolutions), split (split image), or single (single pass)')
     parser.add_argument('--sample_rate', type=int, default=10, help='process every Nth frame in the first pass')
     parser.add_argument('--use_gpu', action='store_true', help='use GPU for image splitting (if available)')
     args = parser.parse_args()
