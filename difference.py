@@ -25,6 +25,7 @@ def create_difference_video(video1_path, video2_path, output_path):
 
         # Calculate absolute difference between frames
         diff = cv2.absdiff(frame1, frame2)
+        diff*=5
 
         # Write difference frame to output video
         out.write(diff)
