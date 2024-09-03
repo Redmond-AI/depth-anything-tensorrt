@@ -6,21 +6,29 @@ import argparse
 from dpt.dpt import DptTrtInference
 import time
 
-def process_frame(frame, dpts, sizes):
+def process_frame(frame, dpt, sizes):
     original_size = frame.shape[:2][::-1]  # (width, height)
     depths = []
 
-    for dpt, size in zip(dpts, sizes):
-        # Resize and preprocess the frame
+    for size in sizes:
+        # Resize the frame to the current size
         frame_resized = cv2.resize(frame, (size, size))
-        frame_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
+        
+        # Resize again to 798x798 for DPT input
+        frame_dpt = cv2.resize(frame_resized, (798, 798))
+        
+        # Preprocess the frame
+        frame_rgb = cv2.cvtColor(frame_dpt, cv2.COLOR_BGR2RGB)
         frame_input = frame_rgb.transpose(2, 0, 1)
         frame_input = np.expand_dims(frame_input, axis=0)
         frame_input = frame_input.astype(np.float32) / 255.0
 
         # Run inference
         depth = dpt(frame_input)
-        depths.append(cv2.resize(depth.squeeze(), original_size))
+        
+        # Resize depth back to original size
+        depth_resized = cv2.resize(depth.squeeze(), original_size)
+        depths.append(depth_resized)
 
     # Combine depths using max operation
     combined_depth = np.max(depths, axis=0)
@@ -38,9 +46,9 @@ def normalize_and_convert_depth(depth, original_size, global_min, global_max):
     return depth_bgr
 
 def run_video(args):
-    sizes = [266, 392, 518, 616, 798]
-    # Initialize DptTrtInference for each size
-    dpts = [DptTrtInference(args.engine, 1, (size, size), (size, size), multiple_of=32) for size in sizes]
+    sizes = [266, 392, 518, 798]
+    # Initialize a single DptTrtInference for 798x798 input
+    dpt = DptTrtInference(args.engine, 1, (798, 798), (798, 798), multiple_of=32)
 
     # Open video capture
     cap = cv2.VideoCapture(args.video)
@@ -61,7 +69,7 @@ def run_video(args):
         if not ret:
             break
 
-        depth, _ = process_frame(frame, dpts, sizes)
+        depth, _ = process_frame(frame, dpt, sizes)
         global_min = min(global_min, depth.min())
         global_max = max(global_max, depth.max())
 
@@ -89,7 +97,8 @@ def run_video(args):
 
         # Process frame and measure time
         start_time = time.time()
-        depth, original_size = process_frame(frame, dpts, sizes)
+        depth, original_size = process_frame(frame, dpt, sizes)
+        print("min and max",global_min, global_max)
         depth_frame = normalize_and_convert_depth(depth, original_size, global_min, global_max)
         end_time = time.time()
         frame_time = end_time - start_time
