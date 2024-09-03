@@ -4,7 +4,7 @@
 size=602
 
 # Number of iterations
-iterations=35
+iterations=45
 
 for i in $(seq 1 $iterations); do
     echo "Running iteration $i with size $size"
