@@ -122,17 +122,19 @@ def run_video(args):
         if not ret:
             break
 
-        if args.method == 'multi_res':
-            depth, _ = process_frame_multi_res(frame, dpt, sizes)
-        else:  # split method
-            depth, _ = process_frame_split(frame, dpt)
-        
-        global_min = min(global_min, depth.min())
-        global_max = max(global_max, depth.max())
+        if frame_count % args.sample_rate == 0:
+            if args.method == 'multi_res':
+                depth, _ = process_frame_multi_res(frame, dpt, sizes)
+            else:  # split method
+                depth, _ = process_frame_split(frame, dpt)
+            
+            global_min = min(global_min, depth.min())
+            global_max = max(global_max, depth.max())
+
+            progress = (frame_count / total_frames) * 100
+            print(f"\rFirst pass: {progress:.2f}% complete", end="")
 
         frame_count += 1
-        progress = (frame_count / total_frames) * 100
-        print(f"\rFirst pass: {progress:.2f}% complete", end="")
 
     print(f"\nGlobal depth range: {global_min:.2f} to {global_max:.2f}")
 
@@ -199,6 +201,7 @@ if __name__ == "__main__":
     parser.add_argument('--display', action='store_true', help='display processed frames')
     parser.add_argument('--method', type=str, choices=['multi_res', 'split'], default='multi_res',
                         help='processing method: multi_res (multiple resolutions) or split (split image)')
+    parser.add_argument('--sample_rate', type=int, default=10, help='process every Nth frame in the first pass')
     args = parser.parse_args()
 
     run_video(args)
