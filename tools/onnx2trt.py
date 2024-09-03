@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--onnx', type=str, required=True, help='Path to input ONNX model')
     parser.add_argument('--engine', type=str, required=True, help='Path to output TensorRT engine')
     parser.add_argument('--fp16', action='store_true', help='Enable FP16 precision')
-    parser.add_argument('--workspace', type=int, default=16, help='Max workspace size in GB')
+    parser.add_argument('--workspace', type=int, default=20, help='Max workspace size in GB')
     args = parser.parse_args()
 
     # Check if CUDA is available
