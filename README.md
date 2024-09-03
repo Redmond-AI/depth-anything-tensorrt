@@ -15,7 +15,7 @@ Install dependencies:
 pip install tensorrt-cu12==10.2.0.post1
 
 
-pip install pycuda ?
+pip install pycuda #needed for converting to trt
 ```
 
 ## Model Preparation
