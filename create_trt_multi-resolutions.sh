@@ -15,7 +15,7 @@ if [ "$vit" != "vitl" ] && [ "$vit" != "vitg" ]; then
 fi
 
 # Starting size
-size=1050
+size=1092
 
 # Number of iterations
 iterations=40
