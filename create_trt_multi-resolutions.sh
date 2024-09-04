@@ -47,7 +47,7 @@ for i in $(seq 1 $iterations); do
 
     # Run inference
     git pull
-    python infer_video.py --video flowers.mov --engine depth_anything_v2_${vit}_4090_${size}.trt --size ${size} --output ${vit}_flowers_single_${size}_${precision}.mp4 --method single --use_gpu --sample_rate 10
+    python infer_video.py --video flowers.mov --engine depth_anything_v2_${vit}_4090_${size}_${precision}.trt --size ${size} --output ${vit}_flowers_single_${size}_${precision}.mp4 --method single --use_gpu --sample_rate 10
 
     # Delete the .trt file
     # rm depth_anything_v2_${vit}_4090_${size}.trt
