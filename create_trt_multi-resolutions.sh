@@ -20,7 +20,7 @@ if [ "$vit" != "vitl" ] && [ "$vit" != "vitg" ]; then
 fi
 
 # Validate the starting size argument
-if ! [[ "$size" =~ ^[0-9]+$ ]]; then
+if ! echo "$size" | grep -q '^[0-9]\+$'; then
     echo "Invalid starting size. Please provide a positive integer."
     exit 1
 fi
