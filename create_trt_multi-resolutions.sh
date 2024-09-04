@@ -1,12 +1,15 @@
 #!/bin/bash
 
-# Check if the vit argument is provided
-if [ $# -eq 0 ]; then
-    echo "Please provide the vit argument (vitl or vitg)"
+# Check if both vit and starting size arguments are provided
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <vit> <starting_size>"
+    echo "  vit: 'vitl' or 'vitg'"
+    echo "  starting_size: integer value for the starting size"
     exit 1
 fi
 
 vit=$1
+size=$2
 
 # Validate the vit argument
 if [ "$vit" != "vitl" ] && [ "$vit" != "vitg" ]; then
@@ -14,8 +17,11 @@ if [ "$vit" != "vitl" ] && [ "$vit" != "vitg" ]; then
     exit 1
 fi
 
-# Starting size
-size=1092
+# Validate the starting size argument
+if ! [[ "$size" =~ ^[0-9]+$ ]]; then
+    echo "Invalid starting size. Please provide a positive integer."
+    exit 1
+fi
 
 # Number of iterations
 iterations=40
