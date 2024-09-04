@@ -37,10 +37,10 @@ iterations=40
 for i in $(seq 1 $iterations); do
     echo "Running iteration $i with size $size"
 
-    mkdir depth_anything_v2_${vit}_4090_${size}
+    mkdir depth_anything_v2_${vit}_4090_${size}_${precision}
 
     # Export ONNX
-    PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_${vit}.pth --onnx depth_anything_v2_${vit}_4090_${size}/depth_anything_v2_${vit}_4090_${size}.onnx --input_size ${size} --encoder ${vit} 
+    PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_${vit}.pth --onnx depth_anything_v2_${vit}_4090_${size}_${precision}/depth_anything_v2_${vit}_4090_${size}_${precision}.onnx --input_size ${size} --encoder ${vit} 
 
     # Convert ONNX to TRT
     PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_4090_${size}/depth_anything_v2_${vit}_4090_${size}.onnx --engine depth_anything_v2_${vit}_4090_${size}_${precision}.trt --${precision} --workspace 20
@@ -52,9 +52,8 @@ for i in $(seq 1 $iterations); do
     # Delete the .trt file
     # rm depth_anything_v2_${vit}_4090_${size}.trt
     # echo "Deleted depth_anything_v2_${vit}_4090_${size}.trt"
-    rm -r depth_anything_v2_${vit}_4090_${size}
-    rm depth_anything_v2_${vit}_4090_${size}.onnx
-    echo "Deleted depth_anything_v2_${vit}_4090_${size}.onnx"
+    rm -r depth_anything_v2_${vit}_4090_${size}_${precision}
+    echo "Deleted depth_anything_v2_${vit}_4090_${size}_${precision}"
     # Increment size by 14
     size=$((size + 14))
 done
