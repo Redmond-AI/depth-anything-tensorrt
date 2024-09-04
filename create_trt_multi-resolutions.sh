@@ -9,7 +9,7 @@ iterations=40
 for i in $(seq 1 $iterations); do
     echo "Running iteration $i with size $size"
 
-    mkdir depth_anything_v2_vitl_4090_${size}
+    mkdir depth_anything_v2_vitg_4090_${size}
 
     # Export ONNX
     PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/myrepo/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_vitg.pth --onnx depth_anything_v2_vitg_4090_${size}/depth_anything_v2_vitg_4090_${size}.onnx --input_size ${size} --encoder vitg 
