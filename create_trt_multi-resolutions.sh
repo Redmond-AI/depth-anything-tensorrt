@@ -22,11 +22,11 @@ for i in $(seq 1 $iterations); do
     python infer_video.py --video flowers.mov --engine depth_anything_v2_vitg_4090_${size}.trt --size ${size} --output vitg_flowers_single_${size}_04.mp4 --method single --use_gpu --sample_rate 10
 
     # Delete the .trt file
-    rm depth_anything_v2_vitl_4090_${size}.trt
-    echo "Deleted depth_anything_v2_vitl_4090_${size}.trt"
-    rm -r depth_anything_v2_vitl_4090_${size}
-    rm depth_anything_v2_vitl_4090_${size}.onnx
-    echo "Deleted depth_anything_v2_vitl_4090_${size}.onnx"
+    rm depth_anything_v2_vitg_4090_${size}.trt
+    echo "Deleted depth_anything_v2_vitg_4090_${size}.trt"
+    rm -r depth_anything_v2_vitg_4090_${size}
+    rm depth_anything_v2_vitg_4090_${size}.onnx
+    echo "Deleted depth_anything_v2_vitg_4090_${size}.onnx"
     # Increment size by 14
     size=$((size + 14))
 done
