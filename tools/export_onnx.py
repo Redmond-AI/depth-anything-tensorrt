@@ -48,7 +48,7 @@ def main():
         export_params=True,
         do_constant_folding=True,
         keep_initializers_as_inputs=False,
-        verbose=True
+        verbose=False
     )
 
     print(f"Model exported to {args.onnx}")
