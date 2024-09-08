@@ -5,7 +5,7 @@ if [ $# -lt 5 ]; then
     echo -e "\e[31mUsage: $0 <vit> <starting_size> <precision> <gpu> <workspace>\e[0m" | tee -a log.txt
     echo -e "\e[31m  vit: 'vitl' or 'vitg'\e[0m" | tee -a log.txt
     echo -e "\e[31m  starting_size: integer value for the starting size\e[0m" | tee -a log.txt
-    echo -e "\e[31m  precision: 'tf32' or 'fp16'\e[0m" | tee -a log.txt
+    echo -e "\e[31m  precision: 'tf32', 'fp16', or 'fp32'\e[0m" | tee -a log.txt
     echo -e "\e[31m  gpu: GPU model (e.g., '4090')\e[0m" | tee -a log.txt
     echo -e "\e[31m  workspace: workspace size in GB (e.g., '20')\e[0m" | tee -a log.txt
     exit 1
@@ -30,8 +30,8 @@ if ! echo "$size" | grep -q '^[0-9]\+$'; then
 fi
 
 # Validate the precision argument
-if [ "$precision" != "tf32" ] && [ "$precision" != "fp16" ]; then
-    echo -e "\e[31mInvalid precision argument. Please use either 'tf32' or 'fp16'\e[0m" | tee -a log.txt
+if [ "$precision" != "tf32" ] && [ "$precision" != "fp16" ] && [ "$precision" != "fp32" ]; then
+    echo -e "\e[31mInvalid precision argument. Please use 'tf32', 'fp16', or 'fp32'\e[0m" | tee -a log.txt
     exit 1
 fi
 
