@@ -30,9 +30,12 @@ def main():
     depth_anything.load_state_dict(torch.load(args.checkpoint, map_location='cpu'))
     depth_anything = depth_anything.to('cpu').eval()
 
+    # Freeze the model
+    for param in depth_anything.parameters():
+        param.requires_grad = False
+
     dummy_input = torch.ones((args.batch, 3, args.input_size, args.input_size))
-    example_output = depth_anything.forward(dummy_input)
-    dynamic_axes = {'input': {0: 'batch_size'}} if args.dynamic_batch else None
+    dynamic_axes = {'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}} if args.dynamic_batch else None
 
     torch.onnx.export(
         depth_anything,
@@ -41,8 +44,11 @@ def main():
         input_names=['input'],
         output_names=['output'],
         dynamic_axes=dynamic_axes,
-        opset_version=12,  # Add this line
-        export_params=True,  # Add this line
+        opset_version=12,
+        export_params=True,
+        do_constant_folding=True,
+        keep_initializers_as_inputs=False,
+        verbose=True
     )
 
     print(f"Model exported to {args.onnx}")
