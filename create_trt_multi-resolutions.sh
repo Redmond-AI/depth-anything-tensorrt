@@ -69,5 +69,5 @@ for i in $(seq 1 $iterations); do
     echo -e "\e[31mDeleted depth_anything_v2_${vit}_${gpu}_${size}_${precision}\e[0m" | tee -a log.txt
     # Increment size by 14
     echo -e "\e[31msize=$((size + 14))\e[0m" | tee -a log.txt
-    size=$((size + 14))
+    size=$((size - 14))
 done
