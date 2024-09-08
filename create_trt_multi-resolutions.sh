@@ -1,12 +1,13 @@
 #!/bin/bash
 rm log.txt
 # Check if all required arguments are provided
-if [ $# -lt 4 ]; then
-    echo -e "\e[31mUsage: $0 <vit> <starting_size> <precision> <gpu>\e[0m" | tee -a log.txt
+if [ $# -lt 5 ]; then
+    echo -e "\e[31mUsage: $0 <vit> <starting_size> <precision> <gpu> <workspace>\e[0m" | tee -a log.txt
     echo -e "\e[31m  vit: 'vitl' or 'vitg'\e[0m" | tee -a log.txt
     echo -e "\e[31m  starting_size: integer value for the starting size\e[0m" | tee -a log.txt
     echo -e "\e[31m  precision: 'tf32' or 'fp16'\e[0m" | tee -a log.txt
     echo -e "\e[31m  gpu: GPU model (e.g., '4090')\e[0m" | tee -a log.txt
+    echo -e "\e[31m  workspace: workspace size in GB (e.g., '20')\e[0m" | tee -a log.txt
     exit 1
 fi
 
@@ -14,6 +15,7 @@ vit=$1
 size=$2
 precision=$3
 gpu=$4
+workspace=$5
 
 # Validate the vit argument
 if [ "$vit" != "vitl" ] && [ "$vit" != "vitg" ]; then
@@ -33,6 +35,12 @@ if [ "$precision" != "tf32" ] && [ "$precision" != "fp16" ]; then
     exit 1
 fi
 
+# Validate the workspace argument
+if ! echo "$workspace" | grep -q '^[0-9]\+$'; then
+    echo -e "\e[31mInvalid workspace size. Please provide a positive integer.\e[0m" | tee -a log.txt
+    exit 1
+fi
+
 # Number of iterations
 iterations=40
 
@@ -47,8 +55,8 @@ for i in $(seq 1 $iterations); do
     PYTHONPATH=. python tools/export_onnx.py --checkpoint /app/depth-anything-tensorrt/third_party/depth_anything_v2/depth_anything_v2/checkpoints/depth_anything_v2_${vit}.pth --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --input_size ${size} --encoder ${vit} 2>&1 | tee -a log.txt
 
     # Convert ONNX to TRT
-    echo -e "\e[31mPYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace 20\e[0m" | tee -a log.txt
-    PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace 20 2>&1 | tee -a log.txt
+    echo -e "\e[31mPYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace ${workspace}\e[0m" | tee -a log.txt
+    PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace ${workspace} 2>&1 | tee -a log.txt
 
     # Run inference
     echo -e "\e[31mgit pull\e[0m" | tee -a log.txt
