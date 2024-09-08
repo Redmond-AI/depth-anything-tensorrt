@@ -41,6 +41,8 @@ def main():
         input_names=['input'],
         output_names=['output'],
         dynamic_axes=dynamic_axes,
+        opset_version=12,  # Add this line
+        export_params=True,  # Add this line
     )
 
     print(f"Model exported to {args.onnx}")
