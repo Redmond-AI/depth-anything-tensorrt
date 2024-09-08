@@ -62,7 +62,7 @@ for i in $(seq 1 $iterations); do
     echo -e "\e[31mgit pull\e[0m" | tee -a log.txt
     git pull 2>&1 | tee -a log.txt
     echo -e "\e[31mpython infer_video.py --video test.mp4 --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --size ${size} --output ${vit}_${gpu}_test_single_${size}_${precision}.mp4 --method single --use_gpu --sample_rate 10\e[0m" | tee -a log.txt
-    python infer_video.py --video test.mp4 --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --size ${size} --output ${vit}_${gpu}_test_single_${size}_${precision}.mp4 --method single --use_gpu --sample_rate 10 2>&1 | tee -a log.txt
+    python infer_video.py --video test.mp4 --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --size ${size} --output ${vit}_${gpu}_test_single_${size}_${precision}.mp4 --method single --use_gpu --sample_rate 10 2>&1 | tee -a video_log.txt
 
     echo -e "\e[31mrm -r depth_anything_v2_${vit}_${gpu}_${size}_${precision}\e[0m" | tee -a log.txt
     rm -r depth_anything_v2_${vit}_${gpu}_${size}_${precision} 2>&1 | tee -a log.txt
