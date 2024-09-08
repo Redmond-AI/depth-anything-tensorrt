@@ -1,17 +1,18 @@
 import tensorrt as trt
 import os
 
-def build_engine(onnx_file_path, engine_file_path, fp16_mode=False, tf32_mode=True, workspace_size=20):
+def build_engine(onnx_file_path, engine_file_path, precision='fp32', workspace_size=20):
     logger = trt.Logger(trt.Logger.VERBOSE)
     builder = trt.Builder(logger)
     config = builder.create_builder_config()
     
     config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace_size * (1 << 30))
     
-    if fp16_mode:
+    if precision == 'fp16':
         config.set_flag(trt.BuilderFlag.FP16)
-    if tf32_mode:
+    elif precision == 'tf32':
         config.set_flag(trt.BuilderFlag.TF32)
+    # For FP32, we don't need to set any specific flag
 
     network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
     parser = trt.OnnxParser(network, logger)
@@ -42,9 +43,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build TensorRT engine from ONNX model')
     parser.add_argument('--onnx', type=str, required=True, help='Path to input ONNX model')
     parser.add_argument('--engine', type=str, required=True, help='Path to output TensorRT engine')
-    parser.add_argument('--fp16', action='store_true', help='Enable FP16 precision')
-    parser.add_argument('--tf32', action='store_true', help='Enable TF32 precision')
+    parser.add_argument('--precision', type=str, choices=['fp32', 'fp16', 'tf32'], default='fp32', help='Precision mode')
     parser.add_argument('--workspace', type=int, default=20, help='Max workspace size in GB')
     args = parser.parse_args()
 
-    build_engine(args.onnx, args.engine, args.fp16, args.tf32, args.workspace)
+    build_engine(args.onnx, args.engine, args.precision, args.workspace)
