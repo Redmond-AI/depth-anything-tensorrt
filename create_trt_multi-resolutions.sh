@@ -56,7 +56,7 @@ for i in $(seq 1 $iterations); do
 
     # Convert ONNX to TRT
     echo -e "\e[31mPYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace ${workspace}\e[0m" | tee -a log.txt
-    PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --${precision} --workspace ${workspace} 2>&1 | tee -a log.txt
+    PYTHONPATH=. python trt_build_engine.py --onnx depth_anything_v2_${vit}_${gpu}_${size}_${precision}/depth_anything_v2_${vit}_${gpu}_${size}_${precision}.onnx --engine depth_anything_v2_${vit}_${gpu}_${size}_${precision}.trt --precision ${precision} --workspace ${workspace} 2>&1 | tee -a log.txt
 
     # Run inference
     echo -e "\e[31mgit pull\e[0m" | tee -a log.txt
